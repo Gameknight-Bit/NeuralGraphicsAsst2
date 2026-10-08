@@ -1,7 +1,6 @@
-"""P6: 3D Gaussian covariances and differentiable pinhole projection."""
+"""3D Gaussian covariances and differentiable pinhole projection."""
 
 import torch
-
 
 def quaternion_to_rotation(q):
     """Convert (N, 4) quaternions in (w, x, y, z) order to (N, 3, 3).
@@ -18,12 +17,10 @@ def quaternion_to_rotation(q):
         2 * (x*z - w*y),     2 * (y*z + w*x),     1 - 2 * (x*x + y*y),
     ), dim=-1).reshape(-1, 3, 3)
 
-
 def covariance_3d(scale, quat):
     """Positive scales (N, 3) and quaternions (N, 4) -> covariances (N, 3, 3)."""
     R = quaternion_to_rotation(quat)
     return R @ torch.diag_embed(scale.square()) @ R.transpose(-1, -2)
-
 
 def project_gaussian(mu3, Sigma3, R_wc, t, K):
     """Project world-space means/covariances through one known camera.

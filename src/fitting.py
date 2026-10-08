@@ -1,4 +1,4 @@
-"""P3: initialize and optimize 2D Gaussians, optionally using P4 densification."""
+"""Initialize and optimize 2D Gaussians, optionally using densification (from P4)."""
 
 import math
 
@@ -48,7 +48,7 @@ def fit_image(target, num_gaussians=256, steps=2000, lr=1e-2, log_every=100,
 
     parameters = {"mu": mu, "log_s": log_s, "theta": theta,
                   "color": color, "op_raw": op_raw}
-    opt = torch.optim.Adam(parameters.values(), lr=lr)
+    opt = torch.optim.Adam(parameters.values(), lr=lr) # Adam optimizer usage!
     depth_order = list(range(num_gaussians))  # Fixed front-to-back order in 2D.
     history = []
     grad_sum = mu.new_zeros(num_gaussians)
@@ -72,7 +72,7 @@ def fit_image(target, num_gaussians=256, steps=2000, lr=1e-2, log_every=100,
         if not math.isfinite(mse):
             raise RuntimeError(f"Non-finite loss at step {step}; try a smaller learning rate")
         if densification:
-            # Accumulate magnitudes, not gradient vectors (which can cancel).
+            # Accumulate magnitudes, not gradient vectors.
             with torch.no_grad():
                 grad_sum += parameters["mu"].grad.norm(dim=1)
             grad_steps += 1

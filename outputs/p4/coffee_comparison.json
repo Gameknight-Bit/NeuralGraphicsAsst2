@@ -1,0 +1,33 @@
+{
+  "target": "photos\\coffee.png",
+  "H": 128,
+  "W": 128,
+  "seed": 0,
+  "steps_per_run": 2000,
+  "lr": 0.01,
+  "starting_count": 64,
+  "budget": 256,
+  "densified": {
+    "count": 256,
+    "mse": 0.0012567858211696148,
+    "psnr": 29.007387275722614,
+    "render": "outputs\\p4\\coffee_densified_fit.png"
+  },
+  "fixed": {
+    "count": 256,
+    "mse": 0.0022157784551382065,
+    "psnr": 26.544736647562793,
+    "render": "outputs\\p4\\coffee_fixed_fit.png"
+  },
+  "higher_psnr": "densified",
+  "densified_minus_fixed_db": 2.462650628159821,
+  "rule": {
+    "densification": true,
+    "budget": 256,
+    "densify_every": 200,
+    "grad_threshold": 1e-06,
+    "size_threshold": 0.05,
+    "split_scale": 1.6,
+    "prune_opacity": 0.02
+  }
+}

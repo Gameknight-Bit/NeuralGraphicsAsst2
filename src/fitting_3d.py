@@ -11,7 +11,7 @@ from renderer import pixel_grid, render, render_pixels
 
 
 def initialize_scene(count, device):
-    """P7 initialization: uniform [-1.5, 1.5]^3 centers and scale 0.08."""
+    """initialize: uniform [-1.5, 1.5]^3 centers and scale 0.08."""
     quat = torch.zeros(count, 4, device=device)
     quat[:, 0] = 1.0
     values = {

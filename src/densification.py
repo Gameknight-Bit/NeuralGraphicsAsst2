@@ -1,24 +1,15 @@
-"""P4: clone, split, prune, and preserve Adam state when counts change."""
+"""Clone, split, prune, and preserve Adam state when counts change."""
 
 import math
-
 import torch
 
 @torch.no_grad()
 def densify(gaussians, grad_mag, budget, image_width, grad_threshold=2e-4,
             size_threshold=0.02, split_scale=1.6, prune_opacity=0.005):
-    """Prune, then clone/split high-gradient Gaussians within a count budget.
+    """Return updated parameters, source indices, new-row flags, and statistics.
 
-    grad_mag is the mean position-gradient norm since the previous pass.
-    size_threshold is a fraction of image width, converted to pixel units.
-    Small selected Gaussians are duplicated exactly in place. Large ones are
-    replaced by two children offset +/- half the parent's longest scale along
-    its rotated axis; both child scales are divided by split_scale.
-
-    Returns (parameters, source_indices, new_rows, stats). The row mapping lets
-    Adam retain its moments for surviving originals. Clone/split children get
-    zero moments. Existing front-to-back order is preserved, with children
-    placed at their parent's location in the list.
+    Classify first, then apply pruning and the budget before making children.
+    Children stay beside their parent in the front-to-back order.
     """
     count = len(gaussians["mu"])
     if budget < count or count == 0 or image_width <= 0:
@@ -28,42 +19,50 @@ def densify(gaussians, grad_mag, budget, image_width, grad_threshold=2e-4,
     if grad_threshold < 0 or size_threshold <= 0 or split_scale <= 1 or not 0 <= prune_opacity < 1:
         raise ValueError("Invalid densification thresholds")
 
+    # grad_mag: per-Gaussian g_i accumulated since the last pass
+    # dense = grad_mag > grad_threshold (under-fit Gaussians)
+    dense = grad_mag > grad_threshold
+    scales = gaussians["log_s"].exp()
+    max_scale = scales.max(dim=1).values.tolist()
+    # Convert the width fraction to pixels; retain the original scalar comparisons.
+    large = dense.new_tensor([s > size_threshold * image_width for s in max_scale])
+
+    # clone = dense & (max_scale <= size_threshold) (duplicate in place)
+    clone = dense & ~large
+
+    # split = dense & (max_scale >  size_threshold)  (2 children, scale / split_scale)
+    split = dense & large
+
+    # prune Gaussians with opacity < prune_opacity
     opacity = gaussians["op_raw"].sigmoid()
     keep = opacity >= prune_opacity
     # Retain one primitive if all are transparent, allowing fitting to recover.
     if not keep.any().item():
         keep[opacity.argmax()] = True
     survivors = torch.nonzero(keep, as_tuple=True)[0]
-    candidates = survivors[grad_mag[survivors] > grad_threshold]
+    # keep the total count <= budget
+    candidates = survivors[(clone | split)[survivors]]
     ranked = candidates[torch.argsort(grad_mag[candidates], descending=True)]
     # Both a clone and a two-child replacement increase the count by one.
     selected = set(ranked[:budget - len(survivors)].tolist())
-    scales = gaussians["log_s"].exp()
-    max_scales = scales.max(dim=1).values.tolist()
+    clone, split = clone.tolist(), split.tolist()
 
+    ## Logging and Result processing Logic (splitting, cloning, etc.) ##
     sources, new_rows, shifts = [], [], []
-    cloned = split = 0
+    cloned = split_count = 0
     for i in survivors.tolist():
-        if i in selected and max_scales[i] > size_threshold * image_width:
-            sources.extend([i, i])
-            new_rows.extend([True, True])
-            shifts.extend([-0.5, 0.5])
-            split += 1
-        else:
-            sources.append(i)
-            new_rows.append(False)
-            shifts.append(0.0)
-            if i in selected:
-                sources.append(i)
-                new_rows.append(True)
-                shifts.append(0.0)
-                cloned += 1
+        do_clone, do_split = i in selected and clone[i], i in selected and split[i]
+        sources.extend([i, i] if do_clone or do_split else [i])
+        new_rows.extend([True, True] if do_split else [False, True] if do_clone else [False])
+        shifts.extend([-0.5, 0.5] if do_split else [0.0, 0.0] if do_clone else [0.0])
+        cloned += do_clone
+        split_count += do_split
 
     stats = {"before": count, "after": len(sources),
-             "pruned": count - len(survivors), "cloned": cloned, "split": split}
+             "pruned": count - len(survivors), "cloned": cloned, "split": split_count}
     source_indices = torch.tensor(sources, device=opacity.device, dtype=torch.long)
     new_rows = torch.tensor(new_rows, device=opacity.device, dtype=torch.bool)
-    if stats["pruned"] == cloned == split == 0:
+    if stats["pruned"] == cloned == split_count == 0:
         return gaussians, source_indices, new_rows, stats
 
     values = {name: value.detach()[source_indices].clone() for name, value in gaussians.items()}
@@ -79,8 +78,6 @@ def densify(gaussians, grad_mag, budget, image_width, grad_threshold=2e-4,
     values["log_s"][split_rows] -= math.log(split_scale)
     parameters = {name: torch.nn.Parameter(value) for name, value in values.items()}
     return parameters, source_indices, new_rows, stats
-
-
 
 def rebuild_adam(old_opt, old_parameters, parameters, sources, new_rows, lr):
     """Rebind Adam after count changes, retaining moments for original rows."""
@@ -102,4 +99,3 @@ def rebuild_adam(old_opt, old_parameters, parameters, sources, new_rows, lr):
     # Adam uses one step counter per parameter tensor. Children share that
     # counter while starting with zero first/second moments.
     return opt
-

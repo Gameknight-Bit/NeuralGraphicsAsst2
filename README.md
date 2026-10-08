@@ -1,22 +1,21 @@
-# Gaussian splatting (P1–P8)
-
-Keep all fifteen Python files in the same folder. Put your target images in a
-`textures` subfolder, or pass their paths on the command line.
+# Gaussian Splatting Implementation
 
 | File | Responsibility |
 |---|---|
-| `main.py` | Command-line options and entry point |
-| `gaussians.py` | P1: covariance matrices and Gaussian weights |
-| `gaussians_3d.py` | P6: quaternion rotations, 3D covariance, and camera projection |
-| `renderer.py` | P2: pixel grid and differentiable compositing |
-| `fitting.py` | P3: initialization, Adam training, and final rendering |
-| `densification.py` | P4: cloning, splitting, pruning, and Adam state resizing |
+| `main.py` | Command-line options and entry point | x
+| `gaussians.py` | P1: covariance matrices and Gaussian weights | x
+| `renderer.py` | P2: pixel grid and differentiable compositing | x
+| `fitting.py` | P3: initialization, Adam training, and final rendering | x
+| `densification.py` | P4: cloning, splitting, pruning, and Adam state resizing | x
+| `results.py` | P5: count sweep, CSV table, and PSNR plot | x
+
 | `experiments.py` | Single-image runs, saved outputs, and P4 fixed-count comparison |
-| `results.py` | P5: count sweep, CSV table, and PSNR plot |
 | `image_utils.py` | Device selection and image loading/saving |
 | `scene_data.py` | Load posed images and the shared camera intrinsics |
-| `fitting_3d.py` | P7: initialize, project, render, and fit a 3D scene |
-| `train_3d.py` | P7 command line, training-view evaluation, and writeup outputs |
+
+| `gaussians_3d.py` | P6: quaternion rotations, 3D covariance, and camera projection | x
+| `fitting_3d.py` | P7: initialize, project, render, and fit a 3D scene | 
+| `train_3d.py` | P7: command line, training-view evaluation, and writeup outputs |
 | `densification_3d.py` | P8: 3D cloning, splitting, and pruning |
 | `evaluation_3d.py` | Per-view metrics and mean PSNR on any camera split |
 | `compare_3d.py` | P8 plain-vs-densified training and held-out comparison |
