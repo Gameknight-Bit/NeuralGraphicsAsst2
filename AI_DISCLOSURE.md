@@ -21,7 +21,7 @@ P2:
 - torch functions usage in creating pixel tensors and windowing/chucking logic
 
 P3:
-- History logging for later analysis
+- History logging for future analysis
 - Torch Setup/Parameters entered
 - Densification logic integration from P4 for later analysis
 - Lots of help with stepping logic in fitting.py
@@ -40,10 +40,13 @@ P6:
 P7:
 - Again just like P6, lots of conversion generation.
 - Also fixed a few bugs with the 3d fitting during testing.
+- Testing output logic and printing (output to .md files with comparison to 3 different views)
 
 P8:
+- Help with changing some of the densification representations.
 
 P9:
+- Gif creation script (make_gif.py)
 
 Post-P9:
 - Documentation of code/README.md creation

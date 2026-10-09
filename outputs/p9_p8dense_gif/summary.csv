@@ -1,0 +1,3 @@
+split,views,gaussians,psnr
+train,44,1024,22.992253834094385
+val,12,1024,16.8583706799695

@@ -11,7 +11,7 @@ from image_utils import load_image
 def load_cameras(folder, device="cpu", split="train"):
     """Return camera dictionaries; preserve the images' original resolution."""
     folder = Path(folder)
-    data = json.loads((folder / "cameras.json").read_text())
+    data = json.loads((folder / "cameras.json").read_text(encoding="utf-8-sig"))
     if split not in ("train", "val"):
         raise ValueError("split must be 'train' or 'val'")
     frames = data["frames" if split == "train" else "val_frames"]
